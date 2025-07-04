@@ -1,5 +1,5 @@
 class PeerService {
-  peer: RTCPeerConnection
+  peer: RTCPeerConnection;
 
   constructor() {
     this.peer = new RTCPeerConnection({
@@ -19,20 +19,14 @@ class PeerService {
         },
       ],
       iceCandidatePoolSize: 10,
-    })
+    });
 
     // Log connection state changes for debugging
-    this.peer.addEventListener("connectionstatechange", () => {
+    this.peer.addEventListener("connectionstatechange", () => {});
 
-    })
+    this.peer.addEventListener("signalingstatechange", () => {});
 
-    this.peer.addEventListener("signalingstatechange", () => {
-
-    })
-
-    this.peer.addEventListener("iceconnectionstatechange", () => {
-
-    })
+    this.peer.addEventListener("iceconnectionstatechange", () => {});
   }
 
   async getOffer() {
@@ -41,12 +35,12 @@ class PeerService {
         const offer = await this.peer.createOffer({
           offerToReceiveAudio: true,
           offerToReceiveVideo: true,
-        })
-        await this.peer.setLocalDescription(new RTCSessionDescription(offer))
-        return offer
+        });
+        await this.peer.setLocalDescription(new RTCSessionDescription(offer));
+        return offer;
       } catch (error) {
-        console.error("Error creating offer:", error)
-        throw error
+        console.error("Error creating offer:", error);
+        throw error;
       }
     }
   }
@@ -54,27 +48,55 @@ class PeerService {
   async getAnswer(offer: RTCSessionDescriptionInit) {
     if (this.peer) {
       try {
-        await this.peer.setRemoteDescription(new RTCSessionDescription(offer))
-        const answer = await this.peer.createAnswer()
-        await this.peer.setLocalDescription(new RTCSessionDescription(answer))
-        return answer
+        await this.peer.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await this.peer.createAnswer();
+        await this.peer.setLocalDescription(new RTCSessionDescription(answer));
+        return answer;
       } catch (error) {
-        console.error("Error creating answer:", error)
-        throw error
+        console.error("Error creating answer:", error);
+        throw error;
       }
     }
   }
 
-  async setLocalDescription(ans: RTCSessionDescriptionInit) {
+  async setRemoteSdp(ans: RTCSessionDescriptionInit) {
     if (this.peer) {
       try {
-        await this.peer.setRemoteDescription(new RTCSessionDescription(ans))
+        await this.peer.setRemoteDescription(new RTCSessionDescription(ans));
       } catch (error) {
-        console.error("Error setting remote description:", error)
-        throw error
+        console.error("Error setting remote description:", error);
+        throw error;
       }
+    }
+  }
+
+  async setLocalSdp(offer: RTCSessionDescriptionInit) {
+    if (this.peer) {
+      try {
+        await this.peer.setLocalDescription(new RTCSessionDescription(offer));
+      } catch (error) {
+        console.error("Error setting local description:", error);
+        throw error;
+      }
+    }
+  }
+
+  async onIceCandidate(callback: (candidate: RTCIceCandidate) => void) {
+    this.peer.onicecandidate = ({ candidate }) => {
+      try {
+        if (!candidate) return Error("Didn't receive the ice candidate");
+        callback(candidate);
+      } catch (error) {}
+    };
+  }
+
+  async addIceCandidate(candidate: RTCIceCandidate) {
+    try {
+      this.peer.addIceCandidate(candidate);
+    } catch (error) {
+      console.log(error);
     }
   }
 }
 
-export default new PeerService()
+export default new PeerService();

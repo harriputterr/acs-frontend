@@ -27,7 +27,6 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import dynamic from "next/dynamic";
 
-
 import { useCallback, useEffect, useState } from "react";
 
 const ClientInput = dynamic(
@@ -36,7 +35,7 @@ const ClientInput = dynamic(
 );
 export default function Home() {
   const [inputRoomId, setInputRoomId] = useState("");
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const socket = useSocket();
@@ -48,7 +47,7 @@ export default function Home() {
       if (!socket.connected) socket.connect();
       // Will send username as data into this emitting event later.
       socket.emit(
-        "room:create",
+        "create-room",
         undefined,
         ({ roomId }: { roomId: string }) => {
           router.push(`/room/${roomId}`);
@@ -58,18 +57,16 @@ export default function Home() {
     [socket, router]
   );
 
+
   const handleJoinRoom = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
-      console.log("Button was clicked");
-      console.log(inputRoomId)
-     
       if (!socket) return;
       if (!socket.connected) socket.connect();
 
       setIsLoading(true);
 
       socket?.emit(
-        "room:join",
+        "join-room",
         { roomId: inputRoomId },
         ({ roomExists }: { roomExists: boolean }) => {
           if (!roomExists) {
@@ -77,20 +74,18 @@ export default function Home() {
             toast.error(
               "Room doesn't exist! Please use a valid room id or start a new call."
             );
-            setIsLoading(false)
+            setIsLoading(false);
           } else {
             router.push(`/room/${inputRoomId}`);
           }
         }
       );
     },
-    [isLoading,inputRoomId, socket, router]
+    [isLoading, inputRoomId, socket, router]
   );
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 text-gray-800">
-      
-
       {/* Hero Section */}
       <div className="flex-grow flex items-center justify-center">
         <div className="container mx-auto px-4">
@@ -135,10 +130,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-
-      
-      
     </div>
   );
 }

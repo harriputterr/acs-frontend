@@ -1,7 +1,5 @@
 // app/room/[roomId]/loading.tsx
 export default function LoadingRoom() {
-    
-   
   return (
     <div className="flex items-center justify-center h-full">
       {/* simple CSS spinner */}
