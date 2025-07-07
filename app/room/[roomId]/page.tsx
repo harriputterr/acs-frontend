@@ -2,7 +2,7 @@
 import { useViewport } from "@/hooks/use-viewport";
 import { useParams } from "next/navigation";
 import { useMediaStream } from "@/hooks/use-media-stream";
-import MobileChat from "@/components/MobileChat"
+import MobileChat from "@/components/MobileChat";
 import DesktopChat from "@/components/DesktopChat";
 import { useCallback, useEffect, useState } from "react";
 import { useSocket } from "@/providers/SocketProvider";
@@ -43,20 +43,8 @@ export default function VideoChat() {
     async ({ id }: { id: string }) => {
       console.log("User Joined:", id);
       setRemoteSocketId(id);
-      console.log(
-        "Registered handlers for webrtc-offer:",
-        socket?.listeners("webrtc-offer")
-      );
-      console.log(socket);
-      if (localStream && socket) {
-        localStream
-          .getTracks()
-          .forEach((track) => peer.peer.addTrack(track, localStream));
-        const offer = await peer.getOffer();
-        socket.emit("webrtc-offer", { to: id, sdp: offer });
-      }
     },
-    [socket, localStream]
+    [socket]
   );
 
   const onReceivedOffer = useCallback(
@@ -73,6 +61,16 @@ export default function VideoChat() {
     },
     [socket, localStream, setRemoteSocketId]
   );
+
+  const handleSendOffer = useCallback(async () => {
+    if (localStream && socket) {
+      localStream
+        .getTracks()
+        .forEach((track) => peer.peer.addTrack(track, localStream));
+      const offer = await peer.getOffer();
+      socket.emit("webrtc-offer", { to: remoteSocketId, sdp: offer });
+    }
+  }, [localStream, socket, remoteSocketId]);
 
   const onReceivedAnswer = useCallback(
     async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
@@ -108,20 +106,23 @@ export default function VideoChat() {
   ]);
 
   useEffect(() => {
-    if (!socket || remoteSocketId === null) return;
-    // Register our ICE‐candidate callback
-    peer.onIceCandidate((candidate) => {
-      socket.emit("webrtc-ice-candidate", {
-        to: remoteSocketId,
-        candidate,
-      });
-    });
     peer.peer.ontrack = (event: RTCTrackEvent) => {
+      console.log("This is ran for me");
       const [incomingStream] = event.streams;
       console.log(incomingStream);
       setRemoteStream(incomingStream);
       setHasRemoteStream(true);
     };
+    if (!socket || remoteSocketId === null) return;
+    // Register our ICE‐candidate callback
+    peer.onIceCandidate((candidate) => {
+      console.log("Ice candidate ran for me");
+      socket.emit("webrtc-ice-candidate", {
+        to: remoteSocketId,
+        candidate,
+      });
+    });
+
     return () => {
       peer.onIceCandidate(() => {}); // reset it
     };
@@ -143,6 +144,7 @@ export default function VideoChat() {
         <div>
           <h1>RoomID: {roomId}</h1>
           {socket && <h2>Socket ID: {socket.id}</h2>}
+          <button onClick={handleSendOffer}>Send Offer</button>
         </div>
         <MobileChat
           localStream={localStream}
@@ -160,6 +162,7 @@ export default function VideoChat() {
       <div>
         <h1>RoomID: {roomId}</h1>
         {socket && <h2>Socket ID: {socket.id}</h2>}
+        <button onClick={handleSendOffer}>Send Offer</button>
       </div>
       <DesktopChat
         localStream={localStream}
