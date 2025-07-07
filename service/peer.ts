@@ -29,6 +29,12 @@ class PeerService {
     this.peer.addEventListener("iceconnectionstatechange", () => {});
   }
 
+  addLocalTracks(localStream: MediaStream){
+    localStream.getTracks().forEach(track => {
+      this.peer.addTrack(track, localStream)    
+    });
+  }
+
   async getOffer() {
     if (this.peer) {
       try {
@@ -45,12 +51,12 @@ class PeerService {
     }
   }
 
-  async getAnswer(offer: RTCSessionDescriptionInit) {
+  
+
+  async getAnswer() {
     if (this.peer) {
       try {
-        await this.peer.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await this.peer.createAnswer();
-        await this.peer.setLocalDescription(new RTCSessionDescription(answer));
         return answer;
       } catch (error) {
         console.error("Error creating answer:", error);

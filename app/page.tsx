@@ -50,23 +50,21 @@ export default function Home() {
         "create-room",
         undefined,
         ({ roomId }: { roomId: string }) => {
-          router.push(`/room/${roomId}`);
+          router.push(`/room/${roomId}?mode=creator`);
         }
       );
     },
     [socket, router]
   );
 
-
   const handleJoinRoom = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
       if (!socket) return;
       if (!socket.connected) socket.connect();
-
-      setIsLoading(true);
-
+      
+      setIsLoading(true)
       socket?.emit(
-        "join-room",
+        "room-exist",
         { roomId: inputRoomId },
         ({ roomExists }: { roomExists: boolean }) => {
           if (!roomExists) {
@@ -76,7 +74,7 @@ export default function Home() {
             );
             setIsLoading(false);
           } else {
-            router.push(`/room/${inputRoomId}`);
+            router.push(`/room/${inputRoomId}?mode=joiner`);
           }
         }
       );
