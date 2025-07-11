@@ -16,7 +16,7 @@ export const useSocket = () => {
 export const SocketProvider = ({ children }: SocketProviderProps) => {
   const socket = useMemo(
     () =>
-      io("wss://socket.harsingh.ca", {
+      io(process.env.NEXT_PUBLIC_SOCKET_URL, {
         autoConnect: false,
         transports: ["websocket", "polling"],
         secure: true,

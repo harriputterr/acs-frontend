@@ -67,13 +67,13 @@ export default function VideoChat() {
     async ({ from, sdp }: { from: string; sdp: RTCSessionDescriptionInit }) => {
       console.log("Offer Received from:", from);
       setRemoteSocketId(from);
-      console.log(localStream, "before")
+      console.log(localStream, "before");
       if (localStream && socket) {
-        console.log(localStream, "After")
+        console.log(localStream, "After");
         await peer.setRemoteSdp(sdp);
         peer.addLocalTracks(localStream);
         const answer = await peer.getAnswer();
-        peer.setLocalSdp(answer!)
+        peer.setLocalSdp(answer!);
         socket?.emit("webrtc-answer", { to: from, sdp: answer });
       }
     },
@@ -123,7 +123,7 @@ export default function VideoChat() {
     socket?.on("webrtc-ice-candidate", onReceivingIceCandidate);
 
     if (mode === "joiner" && !hasJoinedRef.current && localStream) {
-      socket?.emit("join-room", {roomId}, () => {
+      socket?.emit("join-room", { roomId }, () => {
         console.log("✅ Joined room as a joiner");
         hasJoinedRef.current = true;
       });
@@ -146,7 +146,7 @@ export default function VideoChat() {
 
   useEffect(() => {
     peer.peer.ontrack = (event: RTCTrackEvent) => {
-      console.log("This is the event ",event)
+      console.log("This is the event ", event);
       const [incomingStream] = event.streams;
       setRemoteStream(incomingStream);
       setHasRemoteStream(true);
@@ -179,12 +179,9 @@ export default function VideoChat() {
   if (isMobile) {
     return (
       <>
-        <div>
-          <h1>RoomID: {roomId}</h1>
-          {socket && <h2>Socket ID: {socket.id}</h2>}
-          {/* <button onClick={handleSendOffer}>Send Offer</button> */}
-        </div>
+        
         <MobileChat
+          roomId={roomId as string}
           localStream={localStream}
           remoteStream={remoteStream}
           hasLocalStream={hasLocalStream}
@@ -197,12 +194,8 @@ export default function VideoChat() {
 
   return (
     <>
-      <div>
-        <h1>RoomID: {roomId}</h1>
-        {socket && <h2>Socket ID: {socket.id}</h2>}
-        {/* <button onClick={handleSendOffer}>Send Offer</button> */}
-      </div>
       <DesktopChat
+        roomId={roomId as string}
         localStream={localStream}
         remoteStream={remoteStream}
         hasLocalStream={hasLocalStream}

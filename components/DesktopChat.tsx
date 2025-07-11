@@ -1,11 +1,13 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Mic, MicOff, Video, VideoOff, Volume2, VolumeX, Phone } from "lucide-react"
+import { Mic, MicOff, Video, VideoOff, Volume2, VolumeX, Phone, Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
+import { toast } from "sonner"
 
 interface DesktopChatProps {
+  roomId: string
   localStream: MediaStream | null
   remoteStream: MediaStream | null
   hasLocalStream: boolean
@@ -14,6 +16,7 @@ interface DesktopChatProps {
 }
 
 export default function DesktopChat({
+  roomId,
   localStream,
   remoteStream,
   hasLocalStream,
@@ -23,11 +26,9 @@ export default function DesktopChat({
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOff, setIsVideoOff] = useState(false)
   const [isSpeakerOff, setIsSpeakerOff] = useState(false)
-  const [callDuration, setCallDuration] = useState(43)
+  const [callDuration, setCallDuration] = useState(0)
   const [isCallActive, setIsCallActive] = useState(true)
   const [isLocalVideoMain, setIsLocalVideoMain] = useState(false)
-
-  // Separate refs for desktop layout
   const desktopMainVideoRef = useRef<HTMLVideoElement>(null)
   const desktopSideVideoRef = useRef<HTMLVideoElement>(null)
 
@@ -45,7 +46,6 @@ export default function DesktopChat({
     return () => clearInterval(interval)
   }, [isCallActive])
 
-  // Assign streams to video elements based on current layout
   useEffect(() => {
     if (desktopMainVideoRef.current) {
       desktopMainVideoRef.current.srcObject = isLocalVideoMain ? localStream : remoteStream
@@ -63,19 +63,19 @@ export default function DesktopChat({
   const toggleMute = () => {
     if (localStream) {
       localStream.getAudioTracks().forEach((track) => {
-        track.enabled = isMuted
+        track.enabled = !track.enabled
       })
+      setIsMuted(!isMuted)
     }
-    setIsMuted(!isMuted)
   }
 
   const toggleVideo = () => {
     if (localStream) {
       localStream.getVideoTracks().forEach((track) => {
-        track.enabled = isVideoOff
+        track.enabled = !track.enabled
       })
+      setIsVideoOff(!isVideoOff)
     }
-    setIsVideoOff(!isVideoOff)
   }
 
   const toggleSpeaker = () => {
@@ -96,6 +96,11 @@ export default function DesktopChat({
     return isLocalVideoMain ? !hasRemoteStream : !hasLocalStream || isVideoOff
   }
 
+  const copyRoomId = () => {
+    navigator.clipboard.writeText(roomId)
+    toast.success("Room ID copied to clipboard!")
+  }
+
   return (
     <div className="flex w-full h-screen bg-black">
       {/* Main video area */}
@@ -110,7 +115,6 @@ export default function DesktopChat({
             display: shouldShowMainPlaceholder() ? "none" : "block",
           }}
         />
-
         {shouldShowMainPlaceholder() && (
           <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-gray-900/40 flex items-center justify-center">
             <Image
@@ -128,16 +132,15 @@ export default function DesktopChat({
             )}
           </div>
         )}
-
         {/* Call duration */}
-        <div className="absolute bottom-6 left-6 z-10">
-          <div className="bg-black/50 backdrop-blur-sm rounded-full px-4 py-2">
-            <span className="text-white text-lg font-mono">{formatTime(callDuration)}</span>
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-30">
+          <div className="flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2">
+            <div className="w-2.5 h-2.5 bg-red-500 rounded-full animate-pulse"></div>
+            <span className="text-white text-lg font-mono tracking-wider">{formatTime(callDuration)}</span>
           </div>
         </div>
-
         {/* Control buttons */}
-        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-20">
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
           <div className="flex items-center space-x-6">
             <Button
               onClick={toggleMute}
@@ -149,7 +152,6 @@ export default function DesktopChat({
             >
               {isMuted ? <MicOff className="h-6 w-6 text-white" /> : <Mic className="h-6 w-6 text-white" />}
             </Button>
-
             <Button
               onClick={toggleVideo}
               variant="ghost"
@@ -160,7 +162,6 @@ export default function DesktopChat({
             >
               {isVideoOff ? <VideoOff className="h-6 w-6 text-white" /> : <Video className="h-6 w-6 text-white" />}
             </Button>
-
             <Button
               onClick={toggleSpeaker}
               variant="ghost"
@@ -171,7 +172,6 @@ export default function DesktopChat({
             >
               {isSpeakerOff ? <VolumeX className="h-6 w-6 text-white" /> : <Volume2 className="h-6 w-6 text-white" />}
             </Button>
-
             <Button
               onClick={handleEndCall}
               variant="ghost"
@@ -183,10 +183,9 @@ export default function DesktopChat({
           </div>
         </div>
       </div>
-
       {/* Right sidebar */}
       <div className="w-80 bg-gray-900 flex flex-col">
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-4 space-y-4">
           <div
             className="relative w-full h-64 rounded-2xl overflow-hidden bg-gray-800 border border-gray-700 cursor-pointer hover:border-white/30 transition-colors"
             onClick={() => setIsLocalVideoMain(!isLocalVideoMain)}
@@ -201,7 +200,6 @@ export default function DesktopChat({
                 display: shouldShowSidePlaceholder() ? "none" : "block",
               }}
             />
-
             {shouldShowSidePlaceholder() && (
               <div className="absolute inset-0 flex items-center justify-center bg-navy-900">
                 <Image
@@ -213,15 +211,27 @@ export default function DesktopChat({
                 />
               </div>
             )}
-
             {!isLocalVideoMain && isVideoOff && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                 <VideoOff className="h-8 w-8 text-white" />
               </div>
             )}
           </div>
+          <div>
+            <h3 className="text-sm text-gray-400 mb-1">Room ID</h3>
+            <div className="flex items-center gap-2">
+              <p className="flex-1 text-lg font-mono text-white bg-gray-800 p-2 rounded-md truncate">{roomId}</p>
+              <Button
+                onClick={copyRoomId}
+                variant="outline"
+                size="icon"
+                className="bg-gray-800 border-gray-700 hover:bg-gray-700"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
-
         <div className="h-32 p-4 border-t border-gray-700">
           <div className="text-white text-sm opacity-75 text-center">Click video to switch views</div>
         </div>
